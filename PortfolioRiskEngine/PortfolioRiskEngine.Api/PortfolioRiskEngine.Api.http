@@ -1,0 +1,6 @@
+@PortfolioRiskEngine.Api_HostAddress = http://localhost:5118
+
+GET {{PortfolioRiskEngine.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

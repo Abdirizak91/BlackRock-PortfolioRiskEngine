@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="PortfolioRiskEngine.Api/PortfolioRiskEngine.Api.csproj" />
+  <Project Path="PortfolioRiskEngine.Application/PortfolioRiskEngine.Application.csproj" />
+  <Project Path="PortfolioRiskEngine.Domain/PortfolioRiskEngine.Domain.csproj" />
+  <Project Path="PortfolioRiskEngine.Infrastructure/PortfolioRiskEngine.Infrastructure.csproj" />
+</Solution>
