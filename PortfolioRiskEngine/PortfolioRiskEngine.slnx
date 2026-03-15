@@ -1,4 +1,10 @@
 <Solution>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/PortfolioRiskEngine.Api.Tests/PortfolioRiskEngine.Api.Tests.csproj" />
+    <Project Path="Tests/PortfolioRiskEngine.Application.Tests/PortfolioRiskEngine.Application.Tests.csproj" />
+    <Project Path="Tests/PortfolioRiskEngine.Domain.Tests/PortfolioRiskEngine.Domain.Tests.csproj" />
+    <Project Path="Tests/PortfolioRiskEngine.Infrastructure.Tests/PortfolioRiskEngine.Infrastructure.Tests.csproj" />
+  </Folder>
   <Project Path="PortfolioRiskEngine.Api/PortfolioRiskEngine.Api.csproj" />
   <Project Path="PortfolioRiskEngine.Application/PortfolioRiskEngine.Application.csproj" />
   <Project Path="PortfolioRiskEngine.Domain/PortfolioRiskEngine.Domain.csproj" />
