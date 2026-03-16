@@ -1,6 +1,18 @@
 @PortfolioRiskEngine.Api_HostAddress = http://localhost:5118
 
-GET {{PortfolioRiskEngine.Api_HostAddress}}/weatherforecast/
+POST http://localhost:5000/riskengine/calculaterisk
 Accept: application/json
+Content-Type: application/json
+
+{
+  "countryPercentageChanges": {
+    "GB": -5.12,
+    "US": -4.34,
+    "FR": -3.87,
+    "DE": -1.23,
+    "SG": -5.5,
+    "GR": -5.68
+  }
+}
 
 ###

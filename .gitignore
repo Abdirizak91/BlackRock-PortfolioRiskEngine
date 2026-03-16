@@ -105,4 +105,18 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
+# Rider user settings
+*.DotSettings.User
+
+# Rider workspace files
+PortfolioRiskEngine/.idea/
+.idea/workspace.xml
+
+# Optional: ignore all user-specific IDE files
+.idea/*
+!.idea/.gitignore
+
+
 # End of https://www.toptal.com/developers/gitignore/api/dotnetcore,react,rider
+
+
