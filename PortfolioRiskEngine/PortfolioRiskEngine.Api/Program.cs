@@ -7,9 +7,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 var dataDirectory = Path.Combine(builder.Environment.ContentRootPath,
     "..", "PortfolioRiskEngine.Infrastructure", "Data");
+var localRiskResultsDbPath = Path.Combine(Path.GetFullPath(dataDirectory), "risk-results.db");
+
+builder.Services.Configure<RiskResultsDatabaseOptions>(
+    builder.Configuration.GetSection(RiskResultsDatabaseOptions.SectionName));
+
+builder.Services.PostConfigure<RiskResultsDatabaseOptions>(options =>
+{
+    if (string.IsNullOrWhiteSpace(options.ConnectionString))
+        options.ConnectionString = $"Data Source={localRiskResultsDbPath}";
+});
 
 builder.Services.AddSingleton<ICsvReaderService>(new CsvReaderService(Path.GetFullPath(dataDirectory)));
 builder.Services.AddSingleton<IRiskCalculator, RiskCalculator>();
+builder.Services.AddSingleton<IRiskResultRepository, RiskResultsRepository>();
 builder.Services.AddScoped<IRiskEngineOrchestrator, RiskEngineOrchestrator>();
 
 builder.Services.AddControllers();

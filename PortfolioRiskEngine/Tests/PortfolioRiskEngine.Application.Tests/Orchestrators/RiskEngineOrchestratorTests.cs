@@ -13,13 +13,16 @@ public class RiskEngineOrchestratorTests
 {
     private readonly ICsvReaderService _csvReaderService;
     private readonly IRiskCalculator _riskCalculator;
+    private readonly IRiskResultRepository _riskResultRepository;
     private readonly RiskEngineOrchestrator _sut;
+
     public RiskEngineOrchestratorTests()
     {
         _csvReaderService = Substitute.For<ICsvReaderService>();
         _riskCalculator = Substitute.For<IRiskCalculator>();
+        _riskResultRepository = Substitute.For<IRiskResultRepository>();
         var logger = Substitute.For<ILogger<RiskEngineOrchestrator>>();
-        _sut = new RiskEngineOrchestrator(_csvReaderService, _riskCalculator, logger);
+        _sut = new RiskEngineOrchestrator(_csvReaderService, _riskCalculator, _riskResultRepository, logger);
     }
 
     [Fact]
@@ -64,6 +67,8 @@ public class RiskEngineOrchestratorTests
         portfolioResult.TotalCollateralValue.ShouldBe(200m);
         portfolioResult.TotalScenarioCollateralValue.ShouldBe(180m);
         portfolioResult.TotalExpectedLoss.ShouldBe(-4m);
+
+        await _riskResultRepository.Received(1).SaveScenarioResultAsync(result);
     }
 
     [Fact]

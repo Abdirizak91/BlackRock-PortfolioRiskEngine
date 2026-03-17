@@ -15,6 +15,7 @@ public interface IRiskEngineOrchestrator
 public class RiskEngineOrchestrator(
     ICsvReaderService csvReaderService,
     IRiskCalculator riskCalculator,
+    IRiskResultRepository riskResultRepository,
     ILogger<RiskEngineOrchestrator> logger)
     : IRiskEngineOrchestrator
 {
@@ -29,7 +30,9 @@ public class RiskEngineOrchestrator(
         stopwatch.Stop();
         logger.LogInformation("Risk calculation completed in {Ms}ms", stopwatch.ElapsedMilliseconds);
 
-        return BuildScenarioResult(request, portfolioResults, stopwatch.ElapsedMilliseconds);
+        var result = BuildScenarioResult(request, portfolioResults, stopwatch.ElapsedMilliseconds);
+        await riskResultRepository.SaveScenarioResultAsync(result);
+        return result;
     }
 
     private async Task<(IReadOnlyList<Portfolio> Portfolios, Dictionary<int, List<Loan>> LoansByPortfolio, Dictionary<string, decimal> RatingLookup)> LoadRiskInputsAsync()

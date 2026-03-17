@@ -8,7 +8,7 @@ namespace PortfolioRiskEngine.Api.Controllers;
 [Route("[controller]")]
 public class RiskEngineController(IRiskEngineOrchestrator riskEngineOrchestrator, ILogger<RiskEngineController> logger) : ControllerBase
 {
-    [HttpPost("calculaterisk")]
+    [HttpPost("calculate-risk")]
     [ProducesResponseType(typeof(ScenarioResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CalculateRisk([FromBody] ScenarioRequestDto request)

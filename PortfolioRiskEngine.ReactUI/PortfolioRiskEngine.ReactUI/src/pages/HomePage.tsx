@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { DEFAULT_SCENARIOS, COUNTRY_NAMES } from '../models/CountryConfig'
 import type { ScenarioRequest } from '../models/ScenarioRequest'
+import { RiskEngineClient } from '../clients/RiskEngineClient'
 import './HomePage.css'
 
-const API_URL = 'http://localhost:5118/riskengine/calculaterisk'
+const riskEngineClient = new RiskEngineClient()
 
 function HomePage() {
   const [percentages, setPercentages] = useState<Record<string, string>>(
@@ -54,22 +55,10 @@ function HomePage() {
 
     setLoading(true)
     try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-      })
-
-      if (!response.ok) {
-        const text = await response.text()
-        setError(`Server error (${response.status}): ${text}`)
-        return
-      }
-
-      const data = await response.json()
+      const data = await riskEngineClient.calculateRisk(request)
       console.log('Scenario result:', data)
     } catch (err) {
-      setError(`Failed to connect to server: ${err instanceof Error ? err.message : String(err)}`)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
     }
