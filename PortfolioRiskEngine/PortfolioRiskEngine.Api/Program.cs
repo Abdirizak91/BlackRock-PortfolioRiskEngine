@@ -24,6 +24,7 @@ builder.Services.AddSingleton<IRiskResultRepository, RiskResultsRepository>();
 builder.Services.AddScoped<IRiskEngineOrchestrator, RiskEngineOrchestrator>();
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -37,6 +38,22 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        await Results.Problem(
+            statusCode: StatusCodes.Status500InternalServerError,
+            title: "Unexpected server error",
+            detail: exception?.Message)
+            .ExecuteAsync(context);
+    });
+});
 
 if (app.Environment.IsDevelopment())
 {

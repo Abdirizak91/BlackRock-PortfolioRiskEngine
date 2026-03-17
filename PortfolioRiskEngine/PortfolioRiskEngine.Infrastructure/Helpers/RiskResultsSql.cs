@@ -1,4 +1,4 @@
-namespace PortfolioRiskEngine.Infrastructure.Services;
+namespace PortfolioRiskEngine.Infrastructure.Helpers;
 
 internal static class RiskResultsSql
 {

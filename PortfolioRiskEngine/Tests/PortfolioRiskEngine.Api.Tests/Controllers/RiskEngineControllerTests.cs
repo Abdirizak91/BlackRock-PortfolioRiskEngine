@@ -4,6 +4,7 @@ using NSubstitute;
 using PortfolioRiskEngine.Api.Controllers;
 using PortfolioRiskEngine.Application.DTOs;
 using PortfolioRiskEngine.Application.Orchestrators;
+using PortfolioRiskEngine.Application.Results;
 using Shouldly;
 
 namespace PortfolioRiskEngine.Api.Tests.Controllers;
@@ -21,41 +22,37 @@ public class RiskEngineControllerTests
     }
 
     [Fact]
-    public async Task CalculateRisk_ShouldReturnBadRequest_WhenNoCountryChangesProvided()
+    public async Task CalculateRisk_ShouldReturn400BadRequest_WhenNoCountryChangesProvided()
     {
         var request = new ScenarioRequestDto { CountryPercentageChanges = new Dictionary<string, decimal>() };
+
+        _riskEngineOrchestratorMock
+            .CalculateRiskAsync(request)
+            .Returns(Result.Failure(RiskEngineErrors.InvalidCountryChanges()));
 
         var result = await _sut.CalculateRisk(request);
 
         var badRequest = result.ShouldBeOfType<BadRequestObjectResult>();
         badRequest.Value.ShouldBe("At least one country percentage change is required.");
-        await _riskEngineOrchestratorMock.DidNotReceive().CalculateRiskAsync(Arg.Any<ScenarioRequestDto>());
+        await _riskEngineOrchestratorMock.Received(1).CalculateRiskAsync(request);
     }
 
     [Fact]
-    public async Task CalculateRisk_ShouldReturnOkWithScenarioResult_WhenRequestIsValid()
+    public async Task CalculateRisk_ShouldReturn201Created_WhenRequestIsValid()
     {
         var request = new ScenarioRequestDto
         {
             CountryPercentageChanges = new Dictionary<string, decimal> { ["US"] = -0.1m }
         };
 
-        var expected = new ScenarioResultDto
-        {
-            RunDate = DateTime.UtcNow,
-            TimeTakenMs = 12,
-            CountryPercentageChanges = request.CountryPercentageChanges,
-            PortfolioResults = []
-        };
-
         _riskEngineOrchestratorMock
             .CalculateRiskAsync(request)
-            .Returns(expected);
+            .Returns(Result.Success());
 
         var result = await _sut.CalculateRisk(request);
 
-        var ok = result.ShouldBeOfType<OkObjectResult>();
-        ok.Value.ShouldBeSameAs(expected);
+        result.ShouldBeOfType<CreatedResult>();
+
         await _riskEngineOrchestratorMock.Received(1).CalculateRiskAsync(request);
     }
 }

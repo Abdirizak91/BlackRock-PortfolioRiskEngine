@@ -1,8 +1,9 @@
 using PortfolioRiskEngine.Application.DTOs;
+using PortfolioRiskEngine.Application.Results;
 
 namespace PortfolioRiskEngine.Application.Interfaces;
 
 public interface IRiskResultRepository
 {
-    Task SaveScenarioResultAsync(ScenarioResultDto result);
+    Task<Result> SaveScenarioResultAsync(ScenarioResultDto result);
 }

@@ -47,7 +47,8 @@ public class RiskResultsRepositoryTests
             ]
         };
 
-        await _sut.SaveScenarioResultAsync(result);
+        var persisted = await _sut.SaveScenarioResultAsync(result);
+        persisted.IsSuccess.ShouldBeTrue();
 
         await using var connection = new SqliteConnection(_fixture.ConnectionString);
         await connection.OpenAsync();
@@ -72,7 +73,8 @@ public class RiskResultsRepositoryTests
             PortfolioResults = []
         };
 
-        await _sut.SaveScenarioResultAsync(result);
+        var persisted = await _sut.SaveScenarioResultAsync(result);
+        persisted.IsSuccess.ShouldBeTrue();
 
         await using var connection = new SqliteConnection(_fixture.ConnectionString);
         await connection.OpenAsync();

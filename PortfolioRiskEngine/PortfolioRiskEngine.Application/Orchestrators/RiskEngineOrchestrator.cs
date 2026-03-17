@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using PortfolioRiskEngine.Application.DTOs;
 using PortfolioRiskEngine.Application.Interfaces;
+using PortfolioRiskEngine.Application.Results;
 using PortfolioRiskEngine.Domain.Entities;
 using PortfolioRiskEngine.Domain.Services;
 
@@ -9,7 +10,7 @@ namespace PortfolioRiskEngine.Application.Orchestrators;
 
 public interface IRiskEngineOrchestrator
 {
-    Task<ScenarioResultDto> CalculateRiskAsync(ScenarioRequestDto request);
+    Task<Result> CalculateRiskAsync(ScenarioRequestDto request);
 }
 
 public class RiskEngineOrchestrator(
@@ -19,34 +20,43 @@ public class RiskEngineOrchestrator(
     ILogger<RiskEngineOrchestrator> logger)
     : IRiskEngineOrchestrator
 {
-    public async Task<ScenarioResultDto> CalculateRiskAsync(ScenarioRequestDto request)
+    public async Task<Result> CalculateRiskAsync(ScenarioRequestDto request)
     {
+        if (request.CountryPercentageChanges.Count == 0)
+            return Result.Failure(RiskEngineErrors.InvalidCountryChanges());
+
         logger.LogInformation("Starting risk calculation with {Count} country inputs", request.CountryPercentageChanges.Count);
 
-        var stopwatch = Stopwatch.StartNew();
-        var (portfolios, loansByPortfolio, ratingLookup) = await LoadRiskInputsAsync();
-        var portfolioResults = CalculatePortfolioResults(portfolios, loansByPortfolio, ratingLookup, request.CountryPercentageChanges);
+        try
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var portfolios = await csvReaderService.ReadPortfoliosAsync();
+            var loans = await csvReaderService.ReadLoansAsync();
+            var ratings = await csvReaderService.ReadRatingsAsync();
 
-        stopwatch.Stop();
-        logger.LogInformation("Risk calculation completed in {Ms}ms", stopwatch.ElapsedMilliseconds);
+            var loansByPortfolio = loans
+                .GroupBy(loan => loan.PortId)
+                .ToDictionary(group => group.Key, group => group.ToList());
 
-        var result = BuildScenarioResult(request, portfolioResults, stopwatch.ElapsedMilliseconds);
-        await riskResultRepository.SaveScenarioResultAsync(result);
-        return result;
-    }
+            var ratingLookup = ratings.ToDictionary(r => r.RatingCode, r => r.ProbabilityOfDefault);
+            var portfolioResults = CalculatePortfolioResults(portfolios, loansByPortfolio, ratingLookup, request.CountryPercentageChanges);
 
-    private async Task<(IReadOnlyList<Portfolio> Portfolios, Dictionary<int, List<Loan>> LoansByPortfolio, Dictionary<string, decimal> RatingLookup)> LoadRiskInputsAsync()
-    {
-        var portfolios = await csvReaderService.ReadPortfoliosAsync();
-        var loans = await csvReaderService.ReadLoansAsync();
-        var ratings = await csvReaderService.ReadRatingsAsync();
+            stopwatch.Stop();
+            logger.LogInformation("Risk calculation completed in {Ms}ms", stopwatch.ElapsedMilliseconds);
 
-        var loansByPortfolio = loans
-            .GroupBy(loan => loan.PortId)
-            .ToDictionary(group => group.Key, group => group.ToList());
+            var scenarioResult = BuildScenarioResult(request, portfolioResults, stopwatch.ElapsedMilliseconds);
+            var persistResult = await riskResultRepository.SaveScenarioResultAsync(scenarioResult);
 
-        var ratingLookup = ratings.ToDictionary(r => r.RatingCode, r => r.ProbabilityOfDefault);
-        return (portfolios, loansByPortfolio, ratingLookup);
+            if (persistResult.IsFailure)
+                return Result.Failure(persistResult.Errors);
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unable to load risk input data.");
+            return Result.Failure(RiskEngineErrors.InputDataUnavailable());
+        }
     }
 
     private List<PortfolioRiskResultDto> CalculatePortfolioResults(

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using PortfolioRiskEngine.Application.DTOs;
 using PortfolioRiskEngine.Application.Interfaces;
+using PortfolioRiskEngine.Application.Results;
+using PortfolioRiskEngine.Infrastructure.Helpers;
 
 namespace PortfolioRiskEngine.Infrastructure.Services;
 
@@ -11,66 +13,75 @@ public class RiskResultsRepository(
     IOptions<RiskResultsDatabaseOptions> options,
     ILogger<RiskResultsRepository> logger) : IRiskResultRepository
 {
-    private readonly string _connectionString = options.Value.ConnectionString?.Trim() ?? string.Empty;
+    private readonly string _connectionString = options.Value.ConnectionString.Trim();
 
-    public async Task SaveScenarioResultAsync(ScenarioResultDto result)
+    public async Task<Result> SaveScenarioResultAsync(ScenarioResultDto result)
     {
         if (string.IsNullOrWhiteSpace(_connectionString))
         {
             logger.LogError("{Section}:ConnectionString is missing or empty. Risk result persistence is skipped.", RiskResultsDatabaseOptions.SectionName);
-            return;
+            return Result.Failure(RiskEngineErrors.PersistenceConfigurationMissing());
         }
 
-        EnsureDatabaseDirectoryExists();
-
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync();
-
-        await EnsureSchemaAsync(connection);
-
-        await using var transaction = await connection.BeginTransactionAsync();
-
-        var riskRunId = await connection.ExecuteScalarAsync<long>(
-            RiskResultsSql.InsertRiskRun,
-            new
-            {
-                RunDateUtc = result.RunDate,
-                result.TimeTakenMs,
-                CreatedUtc = DateTime.UtcNow
-            },
-            transaction);
-
-        if (result.CountryPercentageChanges.Count > 0)
+        try
         {
-            var countryRows = result.CountryPercentageChanges.Select(countryChange => new
+            EnsureDatabaseDirectoryExists();
+
+            await using var connection = new SqliteConnection(_connectionString);
+            await connection.OpenAsync();
+
+            await EnsureSchemaAsync(connection);
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            var riskRunId = await connection.ExecuteScalarAsync<long>(
+                RiskResultsSql.InsertRiskRun,
+                new
+                {
+                    RunDateUtc = result.RunDate,
+                    result.TimeTakenMs,
+                    CreatedUtc = DateTime.UtcNow
+                },
+                transaction);
+
+            if (result.CountryPercentageChanges.Count > 0)
             {
-                RiskRunId = riskRunId,
-                CountryCode = countryChange.Key,
-                PercentageChange = countryChange.Value
-            });
+                var countryRows = result.CountryPercentageChanges.Select(countryChange => new
+                {
+                    RiskRunId = riskRunId,
+                    CountryCode = countryChange.Key,
+                    PercentageChange = countryChange.Value
+                });
 
-            await connection.ExecuteAsync(RiskResultsSql.InsertCountryChange, countryRows, transaction);
+                await connection.ExecuteAsync(RiskResultsSql.InsertCountryChange, countryRows, transaction);
+            }
+
+            if (result.PortfolioResults.Count > 0)
+            {
+                var portfolioRows = result.PortfolioResults.Select(portfolio => new
+                {
+                    RiskRunId = riskRunId,
+                    portfolio.PortfolioId,
+                    portfolio.PortfolioName,
+                    portfolio.Country,
+                    portfolio.Currency,
+                    portfolio.TotalOutstandingAmount,
+                    portfolio.TotalCollateralValue,
+                    portfolio.TotalScenarioCollateralValue,
+                    portfolio.TotalExpectedLoss
+                });
+
+                await connection.ExecuteAsync(RiskResultsSql.InsertPortfolioResult, portfolioRows, transaction);
+            }
+
+            await transaction.CommitAsync();
+            return Result.Success();
         }
-
-        if (result.PortfolioResults.Count > 0)
+        catch (Exception ex)
         {
-            var portfolioRows = result.PortfolioResults.Select(portfolio => new
-            {
-                RiskRunId = riskRunId,
-                portfolio.PortfolioId,
-                portfolio.PortfolioName,
-                portfolio.Country,
-                portfolio.Currency,
-                portfolio.TotalOutstandingAmount,
-                portfolio.TotalCollateralValue,
-                portfolio.TotalScenarioCollateralValue,
-                portfolio.TotalExpectedLoss
-            });
-
-            await connection.ExecuteAsync(RiskResultsSql.InsertPortfolioResult, portfolioRows, transaction);
+            logger.LogError(ex, "Failed to persist risk run result into SQLite.");
+            return Result.Failure(RiskEngineErrors.PersistenceFailed());
         }
-
-        await transaction.CommitAsync();
     }
 
     private static async Task EnsureSchemaAsync(SqliteConnection connection)
