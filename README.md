@@ -41,6 +41,8 @@ The UI starts on `http://localhost:5173`.
 
 ## Architecture Overview
 
+#### `POST /riskengine/calculate-risk`
+
 ```mermaid
 sequenceDiagram
     participant Client as React UI / Client
@@ -83,6 +85,33 @@ sequenceDiagram
     Repo-->>Orch: Success
     Orch-->>API: Result.Success()
     API-->>Client: 201 Created
+```
+
+#### `GET /RunsSearch/search-runs`
+
+```mermaid
+sequenceDiagram
+    participant Client as React UI / Client
+    participant API as RunsSearchController
+    participant Orch as SearchRunsOrchestrator
+    participant Repo as RiskResultsRepository
+    participant DB as SQLite
+
+    Client->>API: GET /RunsSearch/search-runs?pageNumber=1&pageSize=10
+    API->>Orch: SearchRunsAsync(request)
+    Orch->>Orch: Validate pagination (pageNumber >= 1, 1 <= pageSize <= 100)
+
+    alt Validation fails
+        Orch-->>API: Result.Failure(ValidationError)
+        API-->>Client: 400 Bad Request
+    end
+
+    Orch->>Repo: SearchScenarioResultsAsync(pageNumber, pageSize)
+    Repo->>DB: SELECT from risk_runs + JOIN country_changes + portfolio_results
+    DB-->>Repo: Rows
+    Repo-->>Orch: List of ScenarioResultDto + TotalCount
+    Orch-->>API: Result.Success(SearchRunsResponseDto)
+    API-->>Client: 200 OK { pageNumber, pageSize, totalCount, runs[] }
 ```
 
 ---
