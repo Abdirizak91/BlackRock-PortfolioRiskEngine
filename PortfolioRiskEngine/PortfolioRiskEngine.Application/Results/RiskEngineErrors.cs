@@ -2,6 +2,9 @@ namespace PortfolioRiskEngine.Application.Results;
 
 public static class RiskEngineErrors
 {
+    public static ValidationError InvalidPagination() =>
+        new("risk.validation.invalid_pagination", "PageNumber must be >= 1 and PageSize must be between 1 and 100.");
+
     public static ValidationError InvalidCountryChanges() =>
         new("risk.validation.country_changes_required", "At least one country percentage change is required.");
 

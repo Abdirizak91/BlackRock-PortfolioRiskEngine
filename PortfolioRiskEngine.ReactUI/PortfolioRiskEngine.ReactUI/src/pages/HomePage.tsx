@@ -13,11 +13,13 @@ function HomePage() {
     )
   )
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleChange = (country: string, value: string) => {
     setPercentages(prev => ({ ...prev, [country]: value }))
     setError(null)
+    setSuccess(null)
   }
 
   const handleReset = () => {
@@ -32,6 +34,7 @@ function HomePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
 
     const parsed: Record<string, number> = {}
     for (const [country, val] of Object.entries(percentages)) {
@@ -55,8 +58,12 @@ function HomePage() {
 
     setLoading(true)
     try {
-      const data = await riskEngineClient.calculateRisk(request)
-      console.log('Scenario result:', data)
+      const status = await riskEngineClient.calculateRisk(request)
+      if (status === 201) {
+        setSuccess('Risk calculations were successful! View results from the Run History page.')
+      } else {
+        setError(`Unexpected response (${status}). Please try again.`)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -102,6 +109,7 @@ function HomePage() {
           </table>
 
           {error && <div className="error-message">{error}</div>}
+          {success && <div className="success-message">{success}</div>}
 
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={loading}>

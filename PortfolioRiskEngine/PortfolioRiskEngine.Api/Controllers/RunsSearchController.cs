@@ -7,18 +7,16 @@ namespace PortfolioRiskEngine.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class RiskEngineController(IRiskEngineOrchestrator riskEngineOrchestrator, ILogger<RiskEngineController> logger) : ControllerBase
+public class RunsSearchController(ISearchRunsOrchestrator searchRunsOrchestrator, ILogger<RunsSearchController> logger) : ControllerBase
 {
-    [HttpPost("calculate-risk")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [HttpGet("search-runs")]
+    [ProducesResponseType(typeof(SearchRunsResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CalculateRisk([FromBody] ScenarioRequestDto request)
+    public async Task<IActionResult> SearchRuns([FromQuery] SearchRunsRequestDto request)
     {
-        logger.LogInformation("CalculateRisk endpoint called with {Count} countries", request.CountryPercentageChanges.Count);
-
-        var result = await riskEngineOrchestrator.CalculateRiskAsync(request);
+        var result = await searchRunsOrchestrator.SearchRunsAsync(request);
 
         if (result.IsFailure)
         {
@@ -32,8 +30,8 @@ public class RiskEngineController(IRiskEngineOrchestrator riskEngineOrchestrator
             };
         }
 
-        logger.LogInformation("Risk calculation completed successfully.");
-
-        return Created();
+        var response = result.Value!;
+        logger.LogInformation("Search-runs returned {Count} saved runs.", response.Runs.Count);
+        return Ok(response);
     }
 }

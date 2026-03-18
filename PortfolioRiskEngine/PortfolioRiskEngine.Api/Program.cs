@@ -22,6 +22,7 @@ builder.Services.AddSingleton<ICsvReaderService>(new CsvReaderService(Path.GetFu
 builder.Services.AddSingleton<IRiskCalculator, RiskCalculator>();
 builder.Services.AddSingleton<IRiskResultRepository, RiskResultsRepository>();
 builder.Services.AddScoped<IRiskEngineOrchestrator, RiskEngineOrchestrator>();
+builder.Services.AddScoped<ISearchRunsOrchestrator, SearchRunsOrchestrator>();
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
@@ -67,3 +68,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

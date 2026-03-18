@@ -1,3 +1,38 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  padding: 0 20px;
+  background: var(--code-bg);
+}
+
+.nav-link {
+  padding: 14px 24px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: var(--text-h);
+  }
+
+  &.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+}
+
 .app {
   max-width: 700px;
   margin: 0 auto;

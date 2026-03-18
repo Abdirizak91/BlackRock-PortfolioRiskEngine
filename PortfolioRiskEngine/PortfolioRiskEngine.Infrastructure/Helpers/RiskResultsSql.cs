@@ -72,5 +72,44 @@ internal static class RiskResultsSql
             @TotalExpectedLoss
         );
         """;
+
+    internal const string SelectRiskRunsCount = """
+        SELECT COUNT(1)
+        FROM risk_runs;
+        """;
+
+    internal const string SelectRiskRunsPage = """
+        SELECT
+            id AS RiskRunId,
+            run_date_utc AS RunDateUtc,
+            time_taken_ms AS TimeTakenMs
+        FROM risk_runs
+        ORDER BY run_date_utc DESC
+        LIMIT @Limit OFFSET @Offset;
+        """;
+
+    internal const string SelectCountryChangesByRunIds = """
+        SELECT
+            risk_run_id AS RiskRunId,
+            country_code AS CountryCode,
+            percentage_change AS PercentageChange
+        FROM risk_run_country_changes
+        WHERE risk_run_id IN @RunIds;
+        """;
+
+    internal const string SelectPortfolioResultsByRunIds = """
+        SELECT
+            risk_run_id AS RiskRunId,
+            portfolio_id AS PortfolioId,
+            portfolio_name AS PortfolioName,
+            country AS Country,
+            currency AS Currency,
+            total_outstanding_amount AS TotalOutstandingAmount,
+            total_collateral_value AS TotalCollateralValue,
+            total_scenario_collateral_value AS TotalScenarioCollateralValue,
+            total_expected_loss AS TotalExpectedLoss
+        FROM risk_run_portfolio_results
+        WHERE risk_run_id IN @RunIds;
+        """;
 }
 
